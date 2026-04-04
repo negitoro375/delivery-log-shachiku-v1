@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>配達記録</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #2563eb;
+      --blue-mid:    #93c5fd;
+      --blue-light:  #eff6ff;
+      --green:       #059669;
+      --green-mid:   #6ee7b7;
+      --green-light: #ecfdf5;
+      --amber:       #d97706;
+      --amber-light: #fffbeb;
+      --danger:      #dc2626;
+      --ink:         #111827;
+      --ink-2:       #374151;
+      --ink-3:       #6b7280;
+      --border:      #e5e7eb;
+      --surface:     #f9fafb;
+      --white:       #ffffff;
+      --r:           12px;
+      --sh:          0 1px 6px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      min-height: 100vh;
+      padding-bottom: 32px;
+    }
+
+    /* ===== SVG ICONS ===== */
+    .icon { display: inline-block; vertical-align: middle; flex-shrink: 0; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--ink);
+      color: var(--white);
+      padding: 16px 20px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-inner {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    header h1 {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+    header .header-date {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+    }
+
+    /* ===== TABS ===== */
+    .tab-bar {
+      background: var(--white);
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 53px;
+      z-index: 99;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 6px 10px;
+      border: none;
+      background: none;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: color 0.18s;
+      letter-spacing: 0.02em;
+    }
+    .tab-btn .tab-icon { opacity: 0.45; transition: opacity 0.18s; }
+    .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .tab-btn.active .tab-icon { opacity: 1; }
+
+    /* ===== SECTIONS ===== */
+    .section { display: none; padding: 16px; }
+    .section.active { display: block; }
+
+    /* ===== CARD ===== */
+    .card {
+      background: var(--white);
+      border-radius: var(--r);
+      padding: 18px;
+      box-shadow: var(--sh);
+      margin-bottom: 12px;
+    }
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-3);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ===== DATE NAV ===== */
+    input[type="date"] {
+      /* 期間フィルター等で使う隠れたinput用 */
+      flex: 1;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.18s;
+      font-weight: 600;
+    }
+    input[type="date"]:focus { border-color: var(--blue); background: var(--blue-light); }
+
+    .date-nav {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    .date-nav-arrow {
+      width: 44px; height: 44px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      color: var(--ink-2);
+      transition: background 0.14s;
+      flex-shrink: 0;
+    }
+    .date-nav-arrow:active { background: var(--surface); }
+    .date-nav-arrow:disabled { opacity: 0.2; cursor: default; }
+    .date-nav-center {
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
+      padding: 6px 4px;
+      border-radius: 10px;
+      transition: background 0.14s;
+      position: relative;
+    }
+    .date-nav-center:active { background: var(--surface); }
+    .date-nav-main {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1.1;
+      letter-spacing: 0.01em;
+    }
+    .date-nav-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink-3);
+      margin-top: 2px;
+    }
+    .date-today-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      background: var(--blue);
+      color: white;
+      padding: 1px 7px;
+      border-radius: 100px;
+      margin-left: 6px;
+      vertical-align: middle;
+      letter-spacing: 0.04em;
+    }
+    #recordDate {
+      position: fixed;
+      top: 0; left: 0;
+      width: 1px; height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ===== INPUT BLOCKS ===== */
+    .input-row { display: flex; flex-direction: column; gap: 10px; }
+
+    .input-block {
+      border-radius: var(--r);
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+    }
+    .input-block-head {
+      display: flex;
+      align-items: center;
+      padding: 9px 14px;
+      gap: 7px;
+    }
+    .input-block.b-takeout .input-block-head {
+      background: var(--blue-light);
+      border-bottom: 1.5px solid #dbeafe;
+    }
+    .input-block.b-done .input-block-head {
+      background: var(--green-light);
+      border-bottom: 1.5px solid #d1fae5;
+    }
+    .block-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .b-takeout .block-dot { background: var(--blue); }
+    .b-done .block-dot { background: var(--green); }
+    .block-label {
+      font-size: 13px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .b-takeout .block-label { color: var(--blue); }
+    .b-done .block-label { color: var(--green); }
+
+    .input-block-body {
+      display: flex;
+      align-items: center;
+      padding: 14px;
+      gap: 14px;
+      background: var(--white);
+    }
+
+    /* ===== MIC BUTTON ===== */
+    .mic-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .b-takeout .mic-btn { background: var(--blue); color: white; box-shadow: 0 3px 10px rgba(37,99,235,0.3); }
+    .b-done .mic-btn { background: var(--green); color: white; box-shadow: 0 3px 10px rgba(5,150,105,0.3); }
+    .mic-btn:active { transform: scale(0.92); }
+
+    .mic-btn.listening::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      opacity: 0;
+      animation: ripple 1.2s infinite;
+    }
+    @keyframes ripple {
+      0%   { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 0;   transform: scale(1.5); }
+    }
+    .mic-btn.listening { animation: mic-pulse 1.2s infinite; }
+    @keyframes mic-pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.06); }
+    }
+
+    /* ===== COUNT DISPLAY ===== */
+    .count-wrap { flex: 1; text-align: center; }
+    .count-display {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 3px;
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: background 0.12s;
+      border: 2px solid transparent;
+    }
+    .count-display:hover { background: var(--surface); }
+    .count-display:active { background: var(--border); }
+    .count-val {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    .count-unit {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink-3);
+      padding-bottom: 4px;
+    }
+    .count-input-field {
+      width: 100%;
+      font-size: 42px;
+      font-weight: 900;
+      text-align: center;
+      border: 2px solid var(--blue);
+      border-radius: 8px;
+      outline: none;
+      color: var(--ink);
+      background: var(--blue-light);
+      padding: 4px 8px;
+      display: none;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .b-done .count-input-field { border-color: var(--green); background: var(--green-light); }
+
+    .voice-hint {
+      font-size: 11px;
+      color: var(--ink-3);
+      text-align: center;
+      margin-top: 6px;
+      min-height: 16px;
+      font-weight: 500;
+    }
+    .voice-hint.ok  { color: var(--green); }
+    .voice-hint.err { color: var(--danger); }
+    .voice-hint.act { color: var(--blue); }
+
+    /* ===== SAVE BUTTON ===== */
+    .save-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .save-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+    /* ===== SPEECH WARNING ===== */
+    .speech-warn {
+      background: var(--amber-light);
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #78350f;
+      margin-bottom: 10px;
+      display: none;
+      font-weight: 500;
+    }
+
+    /* ===== FILTER ===== */
+    .filter-row { display: flex; gap: 7px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 100px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-3);
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .filter-btn.active {
+      border-color: var(--blue);
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+    .custom-range {
+      display: none;
+      gap: 8px;
+      align-items: center;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .custom-range.visible { display: flex; }
+    .custom-range input[type="date"] { flex: 1; min-width: 130px; font-size: 14px; }
+    .range-sep { color: var(--ink-3); font-weight: 700; font-size: 14px; }
+
+    /* ===== CHART ===== */
+    .chart-wrap { position: relative; height: 210px; margin-top: 4px; }
+    .chart-legend {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-2);
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+    }
+    .legend-dot.takeout { background: rgba(37,99,235,0.12); border: 2px solid rgba(37,99,235,0.5); }
+    .legend-dot.done    { background: rgba(5,150,105,0.85); }
+
+    .chart-guide {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      background: var(--surface);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .chart-guide-bar {
+      width: 22px;
+      height: 32px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      position: relative;
+      background: rgba(37,99,235,0.12);
+      border: 1.5px solid rgba(37,99,235,0.4);
+      overflow: hidden;
+    }
+    .chart-guide-bar::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 55%;
+      background: rgba(5,150,105,0.85);
+      border-radius: 0;
+    }
+    .chart-guide-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-3);
+      line-height: 1.5;
+    }
+    .chart-guide-text b { color: var(--ink-2); }
+
+    /* ===== LOG REVIEW ===== */
+    .log-bests {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .log-best-item {
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+    }
+    .log-best-val {
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+    .log-best-val span { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+    .log-best-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-3);
+      margin-top: 4px;
+      letter-spacing: 0.03em;
+    }
+
+    .log-timeline { display: flex; flex-direction: column; gap: 0; }
+    .log-entry {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-line-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 28px;
+      flex-shrink: 0;
+    }
+    .log-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .log-stem {
+      flex: 1;
+      width: 2px;
+      background: var(--border);
+      margin-top: 4px;
+    }
+    .log-entry:last-child .log-stem { display: none; }
+    .log-body { flex: 1; }
+    .log-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .log-date {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink-2);
+    }
+    .log-badge {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .log-counts {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 3px;
+    }
+    .log-count-item { display: flex; align-items: baseline; gap: 2px; }
+    .log-count-num {
+      font-size: 18px;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+    .log-count-unit { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+    .log-count-lbl  { font-size: 10px; font-weight: 700; color: var(--ink-3); margin-right: 3px; }
+    .log-msg { font-size: 11px; color: var(--ink-3); font-weight: 500; line-height: 1.4; }
+
+    /* ===== STATS ===== */
+    .stats-row { display: flex; gap: 8px; }
+    .stat-box {
+      flex: 1;
+      border-radius: 10px;
+      padding: 14px 10px 12px;
+      text-align: center;
+    }
+    .stat-box.s-takeout { background: var(--blue-light); }
+    .stat-box.s-done    { background: var(--green-light); }
+    .stat-box.s-rate    { background: var(--amber-light); }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .s-takeout .stat-num { color: var(--blue); }
+    .s-done    .stat-num { color: var(--green); }
+    .s-rate    .stat-num { color: var(--amber); }
+    .stat-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ink-3);
+      margin-top: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    /* ===== NO DATA ===== */
+    .no-data {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 160px;
+      color: var(--ink-3);
+      gap: 8px;
+    }
+    .no-data-icon { opacity: 0.25; }
+    .no-data-text { font-size: 13px; font-weight: 600; }
+
+    /* ===== HISTORY LIST ===== */
+    .record-list { display: flex; flex-direction: column; gap: 8px; }
+    .record-item {
+      background: var(--white);
+      border-radius: var(--r);
+      padding: 13px 14px;
+      box-shadow: var(--sh);
+      display: grid;
+      grid-template-columns: 52px 1px 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .rec-date { text-align: center; }
+    .rec-month { font-size: 10px; font-weight: 700; color: var(--ink-3); }
+    .rec-day   { font-size: 26px; font-weight: 900; color: var(--ink); line-height: 1; }
+    .rec-wd    { font-size: 10px; font-weight: 700; color: var(--ink-3); }
+    .rec-sep   { width: 1px; height: 44px; background: var(--border); }
+    .rec-counts { display: flex; gap: 10px; }
+    .rec-count { flex: 1; }
+    .rec-count-lbl { font-size: 10px; font-weight: 700; color: var(--ink-3); letter-spacing: 0.04em; }
+    .rec-count-val { font-size: 22px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .rec-count.c-takeout .rec-count-val { color: var(--blue); }
+    .rec-count.c-done    .rec-count-val { color: var(--green); }
+    .rec-count-unit { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+    .rec-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .rec-rate {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 100px;
+      background: var(--amber-light);
+      color: var(--amber);
+      white-space: nowrap;
+    }
+    .rec-actions { display: flex; gap: 4px; }
+    .rec-btn {
+      border: none;
+      background: none;
+      padding: 5px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--ink-3);
+      transition: background 0.12s, color 0.12s;
+      display: flex;
+      align-items: center;
+    }
+    .rec-btn:hover { background: var(--surface); color: var(--ink); }
+    .rec-btn.del:hover { background: #fee2e2; color: var(--danger); }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 300;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      padding: 28px 20px 44px;
+      width: 100%;
+      max-width: 500px;
+      animation: slideUp 0.22s cubic-bezier(0.25,0.8,0.25,1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 22px;
+      text-align: center;
+      color: var(--ink);
+    }
+    .modal-field { margin-bottom: 14px; }
+    .modal-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--ink);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.18s;
+      font-variant-numeric: tabular-nums;
+    }
+    .modal-input:focus { border-color: var(--blue); background: var(--blue-light); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .modal-cancel {
+      flex: 1;
+      padding: 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-3);
+      cursor: pointer;
+    }
+    .modal-ok {
+      flex: 2;
+      padding: 13px;
+      background: var(--ink);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .modal-ok.danger { background: var(--danger); }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      background: var(--ink);
+      color: white;
+      padding: 11px 22px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transition: all 0.25s;
+      pointer-events: none;
+      z-index: 400;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.ok   { background: var(--green); }
+    .toast.ng   { background: var(--danger); }
+
+    @media (min-width: 520px) {
+      body { max-width: 520px; margin: 0 auto; }
+      header, .tab-bar { max-width: 520px; left: 50%; transform: translateX(-50%); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== INLINE SVG SYMBOL DEFS ===== -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="2" width="6" height="12" rx="3"/>
+    <path d="M5 10a7 7 0 0 0 14 0"/>
+    <line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="9" y1="22" x2="15" y2="22"/>
+  </symbol>
+  <symbol id="ic-stop" viewBox="0 0 24 24" fill="currentColor">
+    <rect x="6" y="6" width="12" height="12" rx="2"/>
+  </symbol>
+  <symbol id="ic-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/>
+  </symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6M14 11v6"/>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </symbol>
+  <symbol id="ic-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="11" width="4" height="10" rx="1"/>
+    <rect x="9"  y="6"  width="4" height="15" rx="1"/>
+    <rect x="15" y="2"  width="4" height="19" rx="1"/>
+  </symbol>
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="6"  x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </symbol>
+  <symbol id="ic-write" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="21" x2="21" y2="21"/>
+    <path d="M5 21V13l7-10 7 10v8"/>
+    <path d="M9 21v-6h6v6"/>
+  </symbol>
+  <symbol id="ic-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8"  y1="2" x2="8"  y2="6"/>
+    <line x1="3"  y1="10" x2="21" y2="10"/>
+  </symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="21 8 21 21 3 21 3 8"/>
+    <rect x="1" y="3" width="22" height="5"/>
+    <line x1="10" y1="12" x2="14" y2="12"/>
+  </symbol>
+</svg>
+
+<header>
+  <div class="header-inner">
+    <h1>配達記録</h1>
+    <span class="header-date" id="headerDate"></span>
+  </div>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('record', this)">
+    <svg class="icon tab-icon" width="18" height="18"><use href="#ic-write"/></svg>
+    記録する
+  </button>
+  <button class="tab-btn" onclick="switchTab('review', this)">
+    <svg class="icon tab-icon" width="18" height="18"><use href="#ic-chart"/></svg>
+    振り返る
+  </button>
+  <button class="tab-btn" onclick="switchTab('history', this)">
+    <svg class="icon tab-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    CSV
+  </button>
+</div>
+
+<!-- ============================= -->
+<!--  TAB 1: 記録する              -->
+<!-- ============================= -->
+<section id="tab-record" class="section active">
+
+  <div class="card">
+    <div class="card-label">
+      <svg class="icon" width="13" height="13"><use href="#ic-calendar"/></svg>
+      日付
+    </div>
+    <div class="date-nav">
+      <button class="date-nav-arrow" id="btnPrev" onclick="shiftDate(-1)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="date-nav-center" onclick="openDatePicker()">
+        <div class="date-nav-main" id="dateDisplay">—</div>
+        <div class="date-nav-sub" id="dateSubDisplay"></div>
+      </div>
+      <button class="date-nav-arrow" id="btnNext" onclick="shiftDate(1)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+    <input type="date" id="recordDate" onchange="onDateChange()">
+  </div>
+
+  <div id="speechWarn" class="speech-warn">
+    音声入力はこのブラウザで利用できません。数字部分をタップして直接入力してください。
+  </div>
+
+  <div class="card">
+    <div class="card-label">件数入力</div>
+    <div class="input-row">
+
+      <!-- 持ち出し -->
+      <div class="input-block b-takeout">
+        <div class="input-block-head">
+          <span class="block-dot"></span>
+          <span class="block-label">持ち出し件数</span>
+        </div>
+        <div class="input-block-body">
+          <button class="mic-btn" id="micBtn-takeout" onclick="startVoice('takeout')">
+            <svg width="22" height="22"><use href="#ic-mic"/></svg>
+          </button>
+          <div class="count-wrap">
+            <div id="disp-takeout" class="count-display" onclick="startEdit('takeout')">
+              <span id="val-takeout" class="count-val">0</span>
+              <span class="count-unit">件</span>
+            </div>
+            <input type="text" inputmode="numeric" id="inp-takeout" class="count-input-field"
+              oninput="filterNumInput(this)" onblur="endEdit('takeout')" onkeydown="if(event.key==='Enter')this.blur()">
+          </div>
+        </div>
+        <div class="voice-hint" id="hint-takeout">マイクを押して話す　または数字をタップ</div>
+      </div>
+
+      <!-- 完了 -->
+      <div class="input-block b-done">
+        <div class="input-block-head">
+          <span class="block-dot"></span>
+          <span class="block-label">完了件数</span>
+        </div>
+        <div class="input-block-body">
+          <button class="mic-btn" id="micBtn-done" onclick="startVoice('done')">
+            <svg width="22" height="22"><use href="#ic-mic"/></svg>
+          </button>
+          <div class="count-wrap">
+            <div id="disp-done" class="count-display" onclick="startEdit('done')">
+              <span id="val-done" class="count-val">0</span>
+              <span class="count-unit">件</span>
+            </div>
+            <input type="text" inputmode="numeric" id="inp-done" class="count-input-field"
+              oninput="filterNumInput(this)" onblur="endEdit('done')" onkeydown="if(event.key==='Enter')this.blur()">
+          </div>
+        </div>
+        <div class="voice-hint" id="hint-done">マイクを押して話す　または数字をタップ</div>
+      </div>
+
+    </div>
+  </div>
+
+  <button class="save-btn" onclick="saveRecord()">保存する</button>
+
+</section>
+
+<!-- ============================= -->
+<!--  TAB 2: 振り返る              -->
+<!-- ============================= -->
+<section id="tab-review" class="section">
+
+  <div class="card">
+    <div class="card-label">表示期間</div>
+    <div class="filter-row">
+      <button class="filter-btn active" id="fb-7"      onclick="setFilter(7)">直近7日</button>
+      <button class="filter-btn"        id="fb-30"     onclick="setFilter(30)">直近30日</button>
+      <button class="filter-btn"        id="fb-0"      onclick="setFilter(0)">全期間</button>
+      <button class="filter-btn"        id="fb-custom" onclick="setFilter('custom')">期間指定</button>
+    </div>
+    <div class="custom-range" id="customRange">
+      <input type="date" id="rangeFrom">
+      <span class="range-sep">—</span>
+      <input type="date" id="rangeTo">
+      <button class="filter-btn active" onclick="applyRange()" style="background:var(--blue);color:#fff;border-color:var(--blue);">適用</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="chart-legend">
+      <div class="legend-item"><span class="legend-dot done"></span>完了</div>
+      <div class="legend-item"><span class="legend-dot takeout"></span>持ち出し</div>
+    </div>
+    <div id="chartWrap">
+      <div class="chart-wrap"><canvas id="deliveryChart"></canvas></div>
+    </div>
+    <div id="noDataChart" class="no-data" style="display:none;">
+      <svg class="no-data-icon" width="44" height="44"><use href="#ic-box"/></svg>
+      <span class="no-data-text">この期間のデータがありません</span>
+    </div>
+  </div>
+
+  <div class="card" id="logReviewCard">
+    <div class="card-label">配達ログを振り返る</div>
+
+    <div class="log-bests" id="logBests"></div>
+
+    <div style="font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:0.05em;margin-bottom:10px;">最近の記録</div>
+    <div class="log-timeline" id="logTimeline"></div>
+
+    <div id="logNoData" class="no-data" style="display:none;height:100px;">
+      <svg class="no-data-icon" width="36" height="36"><use href="#ic-box"/></svg>
+      <span class="no-data-text">まだ記録がありません</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">集計</div>
+    <div class="stats-row">
+      <div class="stat-box s-takeout">
+        <div class="stat-num" id="stTakeout">0</div>
+        <div class="stat-lbl">持ち出し合計</div>
+      </div>
+      <div class="stat-box s-done">
+        <div class="stat-num" id="stDone">0</div>
+        <div class="stat-lbl">完了合計</div>
+      </div>
+      <div class="stat-box s-rate">
+        <div class="stat-num" id="stRate">—</div>
+        <div class="stat-lbl">完了率</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ============================= -->
+<!--  TAB 3: CSV                   -->
+<!-- ============================= -->
+<section id="tab-history" class="section">
+
+  <!-- メインビュー -->
+  <div id="csvMain">
+    <div class="card">
+      <div class="card-label">CSVダウンロード</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <button onclick="showCsvList('monthly')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 8px;background:var(--blue-light);border:1.5px solid #bfdbfe;border-radius:14px;cursor:pointer;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14" stroke-width="3" stroke-linecap="round"/><line x1="12" y1="14" x2="12" y2="14" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="18" x2="8" y2="18" stroke-width="3" stroke-linecap="round"/></svg>
+          <div style="font-size:17px;font-weight:900;color:var(--blue);">月別</div>
+          <div style="font-size:11px;color:var(--ink-3);font-weight:600;">月を選んでDL</div>
+        </button>
+        <button onclick="showCsvList('yearly')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 8px;background:var(--amber-light);border:1.5px solid #fde68a;border-radius:14px;cursor:pointer;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="10" rx="1"/><rect x="9" y="6" width="4" height="15" rx="1"/><rect x="15" y="2" width="4" height="19" rx="1"/></svg>
+          <div style="font-size:17px;font-weight:900;color:var(--amber);">年別</div>
+          <div style="font-size:11px;color:var(--ink-3);font-weight:600;">年を選んでDL</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- サブリストビュー -->
+  <div id="csvSub" style="display:none;">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <button onclick="hideCsvList()" style="display:flex;align-items:center;gap:4px;border:none;background:none;font-size:13px;font-weight:700;color:var(--ink-3);cursor:pointer;padding:4px 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          戻る
+        </button>
+        <span id="csvSubTitle" style="font-size:15px;font-weight:800;color:var(--ink);"></span>
+      </div>
+      <div id="csvSubItems" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ===== EDIT MODAL ===== -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">記録を編集</div>
+    <input type="hidden" id="editId">
+    <div class="modal-field">
+      <label class="modal-lbl">日付</label>
+      <input type="date" id="editDate" class="modal-input" style="font-size:16px;font-weight:700;">
+    </div>
+    <div class="modal-field">
+      <label class="modal-lbl">持ち出し件数</label>
+      <input type="text" inputmode="numeric" id="editTakeout" class="modal-input" oninput="filterNumInput(this)">
+    </div>
+    <div class="modal-field">
+      <label class="modal-lbl">完了件数</label>
+      <input type="text" inputmode="numeric" id="editDone" class="modal-input" oninput="filterNumInput(this)">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('editModal')">キャンセル</button>
+      <button class="modal-ok" onclick="saveEdit()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DELETE MODAL ===== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">削除しますか？</div>
+    <p id="deleteModalLabel" style="text-align:center;font-size:14px;color:var(--ink-2);margin-bottom:8px;font-weight:600;"></p>
+    <p style="text-align:center;font-size:12px;color:var(--ink-3);">この操作は取り消せません。</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('deleteModal')">キャンセル</button>
+      <button class="modal-ok danger" onclick="confirmDelete()">削除する</button>
+    </div>
+    <input type="hidden" id="deleteId">
+  </div>
+</div>
+
+<!-- ===== CSV MODAL ===== -->
+<div class="modal-overlay" id="csvModal">
+  <div class="modal">
+    <div class="modal-title">CSVダウンロード</div>
+
+    <!-- 月別・年別：横並び -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <button onclick="exportCSV('monthly')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px 8px;background:var(--blue-light);border:1.5px solid #bfdbfe;border-radius:12px;cursor:pointer;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="14" x2="8" y2="14" stroke-width="3" stroke-linecap="round"/><line x1="12" y1="14" x2="12" y2="14" stroke-width="3" stroke-linecap="round"/><line x1="8" y1="18" x2="8" y2="18" stroke-width="3" stroke-linecap="round"/></svg>
+        <div style="font-size:15px;font-weight:900;color:var(--blue);">月別</div>
+        <div style="font-size:11px;color:var(--ink-3);font-weight:600;">月ごとの合計</div>
+      </button>
+      <button onclick="exportCSV('yearly')" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:16px 8px;background:var(--amber-light);border:1.5px solid #fde68a;border-radius:12px;cursor:pointer;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="4" height="10" rx="1"/><rect x="9" y="6" width="4" height="15" rx="1"/><rect x="15" y="2" width="4" height="19" rx="1"/></svg>
+        <div style="font-size:15px;font-weight:900;color:var(--amber);">年別</div>
+        <div style="font-size:11px;color:var(--ink-3);font-weight:600;">年ごとの合計</div>
+      </button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:4px;">
+      <button class="modal-cancel" onclick="closeModal('csvModal')">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+const STORAGE_KEY = 'deliveryRecords_v2';
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+
+let records = [];
+let vals = { takeout: 0, done: 0 };
+let activeFilter = 7;
+let customFrom = null, customTo = null;
+let chart = null;
+let recognitions = {};
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// ===== INIT =====
+function init() {
+  const today = todayStr();
+  document.getElementById('recordDate').value = today;
+  document.getElementById('headerDate').textContent = formatJp(today);
+  updateDateDisplay();
+
+  if (!SpeechRec) {
+    document.getElementById('speechWarn').style.display = 'block';
+    document.querySelectorAll('.mic-btn').forEach(b => Object.assign(b.style, { opacity:'0.3', pointerEvents:'none' }));
+    setHint('takeout', '数字をタップして直接入力してください', '');
+    setHint('done',    '数字をタップして直接入力してください', '');
+  }
+
+  loadRecords();
+  renderHistory();
+  renderChart();
+}
+
+// ===== DATE NAV =====
+function updateDateDisplay() {
+  const dateStr = document.getElementById('recordDate').value;
+  if (!dateStr) return;
+  const d      = new Date(dateStr + 'T00:00:00');
+  const isToday = dateStr === todayStr();
+  const m = d.getMonth() + 1, day = d.getDate(), wd = WEEKDAYS[d.getDay()];
+
+  document.getElementById('dateDisplay').innerHTML =
+    `${d.getFullYear()}年${m}月${day}日（${wd}）` +
+    (isToday ? '<span class="date-today-chip">今日</span>' : '');
+  document.getElementById('dateSubDisplay').textContent =
+    isToday ? 'タップして日付を変更' : '← → で前後の日に移動';
+
+  document.getElementById('btnNext').disabled = isToday;
+}
+
+function shiftDate(delta) {
+  const input = document.getElementById('recordDate');
+  const d = new Date(input.value + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  if (d > new Date(todayStr() + 'T00:00:00')) return;
+  input.value = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  onDateChange();
+}
+
+function openDatePicker() {
+  const input = document.getElementById('recordDate');
+  if (typeof input.showPicker === 'function') {
+    try { input.showPicker(); return; } catch(e) {}
+  }
+  // fallback: 全画面に広げてクリック（古いSafari対応）
+  Object.assign(input.style, {
+    pointerEvents: 'auto', position: 'fixed',
+    top: '0', left: '0', width: '100vw', height: '100vh',
+    opacity: '0.01', zIndex: '9999'
+  });
+  input.focus();
+  input.click();
+  const restore = () => {
+    Object.assign(input.style, {
+      pointerEvents: 'none', position: 'fixed',
+      top: '0', left: '0', width: '1px', height: '1px',
+      opacity: '0', zIndex: ''
+    });
+  };
+  input.addEventListener('change', restore, { once: true });
+  input.addEventListener('blur', restore, { once: true });
+}
+
+// ===== DATE CHANGE → RESET =====
+function onDateChange() {
+  updateDateDisplay();
+  // 既存データがあれば読み込む
+  const dateStr = document.getElementById('recordDate').value;
+  const existing = records.find(r => r.date === dateStr);
+  if (existing) {
+    vals = { takeout: existing.takeout, done: existing.done };
+    document.getElementById('val-takeout').textContent = existing.takeout;
+    document.getElementById('val-done').textContent    = existing.done;
+    setHint('takeout', '既存の記録を読み込みました', 'ok');
+    setHint('done',    '既存の記録を読み込みました', 'ok');
+  } else {
+    vals = { takeout: 0, done: 0 };
+    document.getElementById('val-takeout').textContent = '0';
+    document.getElementById('val-done').textContent    = '0';
+    setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
+    setHint('done',    'マイクを押して話す　または数字をタップ', '');
+  }
+}
+
+// ===== STORAGE =====
+function loadRecords() {
+  try { records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { records = []; }
+}
+function saveRecords() { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+
+// ===== DATE UTILS =====
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+}
+function p2(n) { return String(n).padStart(2, '0'); }
+function formatJp(s) {
+  const d = new Date(s + 'T00:00:00');
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WEEKDAYS[d.getDay()]}）`;
+}
+function shortLabel(s) {
+  const d = new Date(s + 'T00:00:00');
+  return `${d.getMonth()+1}/${d.getDate()}(${WEEKDAYS[d.getDay()]})`;
+}
+
+// ===== FULL-WIDTH → HALF-WIDTH + 数字のみ =====
+function toHalf(str) {
+  return String(str).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+function filterNumInput(el) {
+  // 全角→半角 → 数字以外を除去
+  const half = toHalf(el.value).replace(/[^0-9]/g, '');
+  if (el.value !== half) {
+    const pos = el.selectionStart - (el.value.length - half.length);
+    el.value = half;
+    try { el.setSelectionRange(Math.max(0, pos), Math.max(0, pos)); } catch {}
+  }
+}
+
+// ===== TAB =====
+function switchTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'review')  { renderChart(); renderLogReview(); }
+  if (name === 'history') renderHistory();
+}
+
+// ===== VOICE =====
+function startVoice(field) {
+  if (!SpeechRec) return;
+
+  if (recognitions[field]) {
+    recognitions[field].abort();
+    recognitions[field] = null;
+    resetMic(field);
+    return;
+  }
+  const other = field === 'takeout' ? 'done' : 'takeout';
+  if (recognitions[other]) { recognitions[other].abort(); recognitions[other] = null; resetMic(other); }
+
+  const rec = new SpeechRec();
+  rec.lang = 'ja-JP';
+  rec.interimResults = false;
+  rec.maxAlternatives = 5;
+
+  setMicListening(field, true);
+  setHint(field, '話してください...', 'act');
+
+  rec.onresult = e => {
+    const candidates = Array.from(e.results[0]).map(r => r.transcript.trim());
+    let found = null;
+    for (const t of candidates) {
+      const n = parseSpoken(t);
+      if (n !== null) { found = n; break; }
+    }
+    if (found !== null) {
+      vals[field] = found;
+      document.getElementById('val-' + field).textContent = found;
+      setHint(field, `認識結果：${found} 件`, 'ok');
+    } else {
+      setHint(field, 'うまく聞き取れませんでした。もう一度どうぞ', 'err');
+    }
+    recognitions[field] = null;
+    setMicListening(field, false);
+  };
+
+  rec.onerror = e => {
+    const msg = e.error === 'no-speech'    ? '声が届きませんでした'
+               : e.error === 'not-allowed' ? 'マイクの許可が必要です'
+               : 'エラーが発生しました';
+    setHint(field, msg, 'err');
+    recognitions[field] = null;
+    setMicListening(field, false);
+  };
+
+  rec.onend = () => { recognitions[field] = null; setMicListening(field, false); };
+
+  recognitions[field] = rec;
+  try { rec.start(); } catch { setHint(field, 'マイクを開始できませんでした', 'err'); recognitions[field] = null; setMicListening(field, false); }
+}
+
+function parseSpoken(text) {
+  const kanji = {'ゼロ':0,'零':0,'〇':0,'一':1,'壱':1,'二':2,'弐':2,'三':3,'参':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'拾':10,'百':100,'千':1000};
+  let clean = text.replace(/[件個つ]/g,'').replace(/\s|,|，/g,'');
+  // 全角→半角
+  clean = toHalf(clean);
+  const direct = parseInt(clean, 10);
+  if (!isNaN(direct) && direct >= 0) return direct;
+  // 漢数字
+  let res = 0, cur = 0;
+  for (const ch of clean) {
+    const v = kanji[ch];
+    if (v === undefined) return null;
+    if (v >= 10) { res += (cur || 1) * v; cur = 0; }
+    else cur = cur * 10 + v;
+  }
+  res += cur;
+  return res >= 0 ? res : null;
+}
+
+function setMicListening(field, on) {
+  const btn = document.getElementById('micBtn-' + field);
+  btn.classList.toggle('listening', on);
+  btn.innerHTML = on
+    ? '<svg width="20" height="20"><use href="#ic-stop"/></svg>'
+    : '<svg width="22" height="22"><use href="#ic-mic"/></svg>';
+}
+
+function resetMic(field) {
+  setMicListening(field, false);
+  setHint(field, 'マイクを押して話す　または数字をタップ', '');
+}
+
+function setHint(field, msg, cls) {
+  const el = document.getElementById('hint-' + field);
+  el.textContent = msg;
+  el.className = 'voice-hint' + (cls ? ' ' + cls : '');
+}
+
+// ===== MANUAL EDIT =====
+function startEdit(field) {
+  document.getElementById('disp-' + field).style.display = 'none';
+  const inp = document.getElementById('inp-' + field);
+  inp.style.display = 'block';
+  inp.value = vals[field];
+  inp.focus();
+  inp.select();
+}
+
+function endEdit(field) {
+  const inp = document.getElementById('inp-' + field);
+  const raw = toHalf(inp.value);
+  const n = parseInt(raw, 10);
+  if (!isNaN(n) && n >= 0) {
+    vals[field] = n;
+    document.getElementById('val-' + field).textContent = n;
+  }
+  document.getElementById('disp-' + field).style.display = '';
+  inp.style.display = 'none';
+  setHint(field, `${vals[field]} 件に設定しました`, 'ok');
+  setTimeout(() => setHint(field, 'マイクを押して話す　または数字をタップ', ''), 2000);
+}
+
+// ===== SAVE MESSAGE =====
+function saveMsg(done) {
+  if (done >= 160) return '保存しました！無事に帰ってきてくれて嬉しいです！';
+  if (done >= 120) return '保存しました！このぐらいでちょうどいいですよね！';
+  if (done >= 100) return '明日もピンに向かって走るだけですね！';
+  if (done >=  80) return '保存しました！今日もお疲れ様でした！';
+  if (done >=  60) return '保存しました！物足りませんよね！';
+  if (done >=  40) return '保存しました！来てくれてありがとう！';
+  if (done >=  20) return '保存しました！ほんと、ありがとうございます⋯';
+  return '保存しました！';
+}
+
+// ===== SAVE =====
+function saveRecord() {
+  const date = document.getElementById('recordDate').value;
+  if (!date) { toast('日付を選択してください', 'ng'); return; }
+  if (vals.takeout === 0 && vals.done === 0) { toast('件数を入力してください', 'ng'); return; }
+
+  const idx = records.findIndex(r => r.date === date);
+  if (idx >= 0) {
+    records[idx] = { ...records[idx], takeout: vals.takeout, done: vals.done, updatedAt: Date.now() };
+    toast('更新しました', 'ok');
+  } else {
+    records.push({ id: Date.now(), date, takeout: vals.takeout, done: vals.done, createdAt: Date.now() });
+    toast(saveMsg(vals.done), 'ok');
+  }
+  saveRecords();
+
+  // reset
+  vals = { takeout: 0, done: 0 };
+  document.getElementById('val-takeout').textContent = '0';
+  document.getElementById('val-done').textContent = '0';
+  document.getElementById('recordDate').value = todayStr();
+  updateDateDisplay();
+  setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
+  setHint('done',    'マイクを押して話す　または数字をタップ', '');
+}
+
+// ===== FILTER =====
+function setFilter(v) {
+  activeFilter = v;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const key = v === 'custom' ? 'fb-custom' : 'fb-' + v;
+  document.getElementById(key).classList.add('active');
+  const cr = document.getElementById('customRange');
+  if (v === 'custom') {
+    cr.classList.add('visible');
+    if (!customFrom) { const d = new Date(); d.setDate(d.getDate()-30); customFrom = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
+    if (!customTo) customTo = todayStr();
+    document.getElementById('rangeFrom').value = customFrom;
+    document.getElementById('rangeTo').value   = customTo;
+  } else {
+    cr.classList.remove('visible');
+    renderChart();
+  }
+}
+
+function applyRange() {
+  customFrom = document.getElementById('rangeFrom').value;
+  customTo   = document.getElementById('rangeTo').value;
+  if (!customFrom || !customTo)   { toast('期間を選択してください', 'ng'); return; }
+  if (customFrom > customTo)      { toast('開始日は終了日以前にしてください', 'ng'); return; }
+  renderChart();
+}
+
+function getFiltered() {
+  const today = new Date(todayStr() + 'T00:00:00');
+  return records.filter(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    if (activeFilter === 0) return true;
+    if (activeFilter === 'custom') {
+      const f = customFrom ? new Date(customFrom + 'T00:00:00') : null;
+      const t = customTo   ? new Date(customTo   + 'T00:00:00') : null;
+      return (!f || d >= f) && (!t || d <= t);
+    }
+    const cut = new Date(today);
+    cut.setDate(today.getDate() - (activeFilter - 1));
+    return d >= cut && d <= today;
+  }).sort((a,b) => a.date.localeCompare(b.date));
+}
+
+// ===== CHART =====
+function renderChart() {
+  const filtered = getFiltered();
+
+  if (filtered.length === 0) {
+    document.getElementById('chartWrap').style.display = 'none';
+    document.getElementById('noDataChart').style.display = 'flex';
+    updateStats([]);
+    return;
+  }
+  document.getElementById('chartWrap').style.display = 'block';
+  document.getElementById('noDataChart').style.display = 'none';
+
+  const labels     = filtered.map(r => shortLabel(r.date));
+  const takeoutArr = filtered.map(r => r.takeout);
+  const doneArr    = filtered.map(r => r.done);
+
+  if (chart) { chart.destroy(); chart = null; }
+
+  const undoneArr = filtered.map(r => Math.max(0, r.takeout - r.done));
+
+  const ctx = document.getElementById('deliveryChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '完了',
+          data: doneArr,
+          backgroundColor: 'rgba(5,150,105,0.82)',
+          borderWidth: 0,
+          borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 5, bottomRight: 5 },
+          borderSkipped: false,
+          stack: 'delivery',
+          barPercentage: 0.72,
+          categoryPercentage: 0.85,
+        },
+        {
+          label: '未完了',
+          data: undoneArr,
+          backgroundColor: 'rgba(37,99,235,0.1)',
+          borderColor: 'rgba(37,99,235,0.45)',
+          borderWidth: { top: 2, left: 1, right: 1, bottom: 0 },
+          borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+          stack: 'delivery',
+          barPercentage: 0.72,
+          categoryPercentage: 0.85,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: items => labels[items[0].dataIndex],
+            label: item => {
+              const r = filtered[item.dataIndex];
+              const rate = r.takeout > 0 ? Math.round(r.done / r.takeout * 100) : 0;
+              if (item.datasetIndex === 0) return `完了：${r.done}件`;
+              return `持ち出し：${r.takeout}件　完了率 ${rate}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { font: { size: 11, weight: '700' }, maxRotation: 45 }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: {
+            stepSize: 10,
+            callback: v => v + '件',
+            font: { size: 11 }
+          }
+        }
+      }
+    }
+  });
+
+  updateStats(filtered);
+}
+
+function renderLogReview() {
+  const bestsEl    = document.getElementById('logBests');
+  const timelineEl = document.getElementById('logTimeline');
+  const noData     = document.getElementById('logNoData');
+
+  if (!records.length) {
+    bestsEl.innerHTML = timelineEl.innerHTML = '';
+    noData.style.display = 'flex';
+    return;
+  }
+  noData.style.display = 'none';
+
+  // ===== パーソナルベスト =====
+  const allDone    = records.map(r => r.done);
+  const bestDone   = Math.max(...allDone);
+  const avgDone    = Math.round(records.reduce((s,r) => s + r.done, 0) / records.length);
+  const totalDone  = records.reduce((s,r) => s + r.done, 0);
+  const totalDays  = records.length;
+
+  // 連続稼働日数（今日から遡る）
+  const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date));
+  let streak = 0;
+  let cur = new Date(todayStr() + 'T00:00:00');
+  for (const r of sorted) {
+    const d = new Date(r.date + 'T00:00:00');
+    const diff = Math.round((cur - d) / 86400000);
+    if (diff <= 1) { streak++; cur = d; }
+    else break;
+  }
+
+  bestsEl.innerHTML = `
+    <div class="log-best-item">
+      <div class="log-best-val">${bestDone}<span>件</span></div>
+      <div class="log-best-lbl">ベスト完了件数</div>
+    </div>
+    <div class="log-best-item">
+      <div class="log-best-val">${avgDone}<span>件</span></div>
+      <div class="log-best-lbl">平均完了件数</div>
+    </div>
+    <div class="log-best-item">
+      <div class="log-best-val">${totalDone.toLocaleString()}<span>件</span></div>
+      <div class="log-best-lbl">通算完了件数</div>
+    </div>
+    <div class="log-best-item">
+      <div class="log-best-val">${streak}<span>日</span></div>
+      <div class="log-best-lbl">連続稼働日数</div>
+    </div>
+  `;
+
+  // ===== タイムライン =====
+  const recent = sorted.slice(0, 7);
+
+  function dotColor(done) {
+    if (done >= 160) return '#7c3aed';
+    if (done >= 120) return '#2563eb';
+    if (done >= 100) return '#0891b2';
+    if (done >=  80) return '#059669';
+    if (done >=  60) return '#d97706';
+    if (done >=  40) return '#ea580c';
+    if (done >=  20) return '#9ca3af';
+    return '#d1d5db';
+  }
+  function badgeStyle(done) {
+    if (done >= 160) return 'background:#ede9fe;color:#7c3aed';
+    if (done >= 120) return 'background:#dbeafe;color:#2563eb';
+    if (done >= 100) return 'background:#cffafe;color:#0891b2';
+    if (done >=  80) return 'background:#d1fae5;color:#059669';
+    if (done >=  60) return 'background:#fef3c7;color:#d97706';
+    if (done >=  40) return 'background:#ffedd5;color:#ea580c';
+    if (done >=  20) return 'background:#f3f4f6;color:#6b7280';
+    return 'background:#f3f4f6;color:#9ca3af';
+  }
+  function badgeLabel(done) {
+    if (done >= 160) return '最高級';
+    if (done >= 120) return 'ハイペース';
+    if (done >= 100) return '好調';
+    if (done >=  80) return '標準';
+    if (done >=  60) return 'やや少';
+    if (done >=  40) return '少なめ';
+    if (done >=  20) return 'わずか';
+    return '—';
+  }
+
+  timelineEl.innerHTML = recent.map(r => {
+    const d   = new Date(r.date + 'T00:00:00');
+    const lbl = `${d.getMonth()+1}/${d.getDate()}（${WEEKDAYS[d.getDay()]}）`;
+    const msg = saveMsg(r.done).replace('保存しました！', '').trim();
+    const rate = r.takeout > 0 ? Math.round(r.done/r.takeout*100) + '%' : '—';
+    return `
+      <div class="log-entry">
+        <div class="log-line-col">
+          <div class="log-dot" style="background:${dotColor(r.done)}"></div>
+          <div class="log-stem"></div>
+        </div>
+        <div class="log-body">
+          <div class="log-meta">
+            <span class="log-date">${lbl}</span>
+            <span class="log-badge" style="${badgeStyle(r.done)}">${badgeLabel(r.done)}</span>
+          </div>
+          <div class="log-counts">
+            <div class="log-count-item">
+              <span class="log-count-lbl">持出</span>
+              <span class="log-count-num" style="color:var(--blue)">${r.takeout}</span>
+              <span class="log-count-unit">件</span>
+            </div>
+            <div class="log-count-item">
+              <span class="log-count-lbl">完了</span>
+              <span class="log-count-num" style="color:var(--green)">${r.done}</span>
+              <span class="log-count-unit">件</span>
+            </div>
+            <div class="log-count-item">
+              <span class="log-count-lbl">完了率</span>
+              <span class="log-count-num" style="font-size:15px;color:var(--amber)">${rate}</span>
+            </div>
+          </div>
+          ${msg ? `<div class="log-msg">${msg}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateStats(filtered) {
+  const t = filtered.reduce((s,r) => s + r.takeout, 0);
+  const d = filtered.reduce((s,r) => s + r.done, 0);
+  const rate = t > 0 ? Math.round(d/t*100) + '%' : '—';
+  document.getElementById('stTakeout').textContent = t;
+  document.getElementById('stDone').textContent    = d;
+  document.getElementById('stRate').textContent    = rate;
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date));
+  const list   = document.getElementById('recordList');
+  const noData = document.getElementById('noDataHistory');
+
+  if (!sorted.length) {
+    list.innerHTML = '';
+    noData.style.display = 'flex';
+    return;
+  }
+  noData.style.display = 'none';
+
+  list.innerHTML = sorted.map(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    const rate = r.takeout > 0 ? Math.round(r.done/r.takeout*100)+'%' : '—';
+    return `<div class="record-item">
+      <div class="rec-date">
+        <div class="rec-month">${d.getMonth()+1}月</div>
+        <div class="rec-day">${d.getDate()}</div>
+        <div class="rec-wd">${WEEKDAYS[d.getDay()]}曜</div>
+      </div>
+      <div class="rec-sep"></div>
+      <div class="rec-counts">
+        <div class="rec-count c-takeout">
+          <div class="rec-count-val">${r.takeout}<span class="rec-count-unit">件</span></div>
+        </div>
+        <div class="rec-count c-done">
+          <div class="rec-count-val">${r.done}<span class="rec-count-unit">件</span></div>
+        </div>
+      </div>
+      <div class="rec-right">
+        <span class="rec-rate">${rate}</span>
+        <div class="rec-actions">
+          <button class="rec-btn" onclick="openEdit(${r.id})" title="編集">
+            <svg width="15" height="15"><use href="#ic-pencil"/></svg>
+          </button>
+          <button class="rec-btn del" onclick="openDelete(${r.id})" title="削除">
+            <svg width="15" height="15"><use href="#ic-trash"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== EDIT =====
+function openEdit(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('editId').value      = id;
+  document.getElementById('editDate').value    = r.date;
+  document.getElementById('editTakeout').value = r.takeout;
+  document.getElementById('editDone').value    = r.done;
+  document.getElementById('editModal').classList.add('open');
+}
+function saveEdit() {
+  const id      = parseInt(document.getElementById('editId').value, 10);
+  const date    = document.getElementById('editDate').value;
+  const takeout = parseInt(toHalf(document.getElementById('editTakeout').value), 10);
+  const done    = parseInt(toHalf(document.getElementById('editDone').value), 10);
+  if (!date || isNaN(takeout) || isNaN(done)) { toast('すべて入力してください', 'ng'); return; }
+  const idx = records.findIndex(r => r.id === id);
+  if (idx >= 0) {
+    records[idx] = { ...records[idx], date, takeout, done, updatedAt: Date.now() };
+    saveRecords();
+    closeModal('editModal');
+    renderHistory();
+    toast('更新しました', 'ok');
+  }
+}
+
+// ===== DELETE =====
+function openDelete(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  document.getElementById('deleteId').value = id;
+  document.getElementById('deleteModalLabel').textContent = formatJp(r.date) + ' のデータ';
+  document.getElementById('deleteModal').classList.add('open');
+}
+function confirmDelete() {
+  const id = parseInt(document.getElementById('deleteId').value, 10);
+  records = records.filter(r => r.id !== id);
+  saveRecords();
+  closeModal('deleteModal');
+  renderHistory();
+  renderChart();
+  toast('削除しました', '');
+}
+
+// ===== CSV =====
+let csvListType = null;
+
+function showCsvList(type) {
+  if (!records.length) { toast('データがありません', 'ng'); return; }
+  csvListType = type;
+
+  const isMonthly = type === 'monthly';
+  document.getElementById('csvSubTitle').textContent = isMonthly ? '月を選択' : '年を選択';
+
+  // キーを収集（月別: YYYY-MM、年別: YYYY）
+  const keys = [...new Set(records.map(r => isMonthly ? r.date.slice(0, 7) : r.date.slice(0, 4)))]
+    .sort().reverse();
+
+  const container = document.getElementById('csvSubItems');
+  container.innerHTML = keys.map(key => {
+    const label = isMonthly
+      ? (() => { const [y, m] = key.split('-'); return `${y}年 ${parseInt(m)}月`; })()
+      : `${key}年`;
+    const count = records.filter(r => r.date.startsWith(key)).length;
+    const color = isMonthly ? 'var(--blue)' : 'var(--amber)';
+    const bg    = isMonthly ? 'var(--blue-light)' : 'var(--amber-light)';
+    const border= isMonthly ? '#bfdbfe' : '#fde68a';
+    return `
+      <button onclick="exportByPeriod('${key}')"
+        style="display:flex;align-items:center;justify-content:space-between;
+               padding:14px 16px;background:${bg};border:1.5px solid ${border};
+               border-radius:10px;cursor:pointer;width:100%;">
+        <span style="font-size:16px;font-weight:900;color:${color};">${label}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--ink-3);">${count}日分
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-left:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </span>
+      </button>`;
+  }).join('');
+
+  document.getElementById('csvMain').style.display = 'none';
+  document.getElementById('csvSub').style.display  = 'block';
+}
+
+function hideCsvList() {
+  document.getElementById('csvSub').style.display  = 'none';
+  document.getElementById('csvMain').style.display = 'block';
+}
+
+function exportByPeriod(key) {
+  const isMonthly = csvListType === 'monthly';
+  const filtered  = records.filter(r => r.date.startsWith(key)).sort((a,b) => a.date.localeCompare(b.date));
+  if (!filtered.length) { toast('データがありません', 'ng'); return; }
+
+  const rows = ['日付,曜日,持ち出し件数,完了件数,完了率'];
+  filtered.forEach(r => {
+    const d    = new Date(r.date + 'T00:00:00');
+    const rate = r.takeout > 0 ? Math.round(r.done / r.takeout * 100) + '%' : '—';
+    rows.push([r.date, WEEKDAYS[d.getDay()] + '曜', r.takeout, r.done, rate].join(','));
+  });
+
+  const filename = isMonthly
+    ? (() => { const [y, m] = key.split('-'); return `配達記録_${y}年${parseInt(m)}月.csv`; })()
+    : `配達記録_${key}年.csv`;
+
+  const csv  = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast('ダウンロードしました', 'ok');
+}
+
+// ===== MODAL =====
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+// ===== TOAST =====
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+init();
+</script>
+</body>
+</html>

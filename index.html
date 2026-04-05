@@ -483,6 +483,91 @@
       letter-spacing: 0.03em;
     }
 
+    /* ===== BEST HIGHLIGHT CARD ===== */
+    .log-best-highlight {
+      grid-column: 1 / -1;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+      padding: 16px 18px;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .log-best-highlight::before {
+      content: '';
+      position: absolute;
+      top: -20px; right: -20px;
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .log-best-highlight::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: 20px;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+    }
+    .best-hl-tag {
+      font-size: 10px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .best-hl-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .best-hl-divider {
+      width: 1px;
+      background: rgba(255,255,255,0.15);
+      margin: 0 16px;
+      flex-shrink: 0;
+      align-self: stretch;
+    }
+    .best-hl-num {
+      font-size: 38px;
+      font-weight: 900;
+      color: white;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+    }
+    .best-hl-unit {
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      margin-left: 2px;
+    }
+    .best-hl-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+      letter-spacing: 0.03em;
+    }
+    .best-hl-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 800;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.7);
+      padding: 2px 7px;
+      border-radius: 100px;
+      margin-top: 6px;
+      letter-spacing: 0.06em;
+      align-self: flex-start;
+    }
+
     .log-timeline { display: flex; flex-direction: column; gap: 0; }
     .log-entry {
       display: flex;
@@ -1909,13 +1994,12 @@ function renderLogReview() {
   noData.style.display = 'none';
 
   // ===== パーソナルベスト =====
-  const allDone    = records.map(r => r.done);
-  const bestDone   = Math.max(...allDone);
-  const avgDone    = Math.round(records.reduce((s,r) => s + r.done, 0) / records.length);
-  const totalDone  = records.reduce((s,r) => s + r.done, 0);
-  const totalDays  = records.length;
+  const allDone   = records.map(r => r.done);
+  const bestDone  = Math.max(...allDone);
+  const avgDone   = Math.round(records.reduce((s,r) => s + r.done, 0) / records.length);
+  const totalDone = records.reduce((s,r) => s + r.done, 0);
 
-  // 連続稼働日数（今日から遡る）
+  // 現在の連続稼働日数（今日から遡る）
   const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date));
   let streak = 0;
   let cur = new Date(todayStr() + 'T00:00:00');
@@ -1926,10 +2010,46 @@ function renderLogReview() {
     else break;
   }
 
+  // ベスト連続稼働日数（全期間で最長の連続）
+  const allDates = [...records].sort((a,b) => a.date.localeCompare(b.date));
+  let bestStreak = 0, tempStreak = 0, prevDate = null;
+  for (const r of allDates) {
+    const d = new Date(r.date + 'T00:00:00');
+    if (prevDate) {
+      const diff = Math.round((d - prevDate) / 86400000);
+      tempStreak = diff === 1 ? tempStreak + 1 : 1;
+    } else {
+      tempStreak = 1;
+    }
+    if (tempStreak > bestStreak) bestStreak = tempStreak;
+    prevDate = d;
+  }
+
   bestsEl.innerHTML = `
-    <div class="log-best-item">
-      <div class="log-best-val">${bestDone}<span>件</span></div>
-      <div class="log-best-lbl">ベスト完了件数</div>
+    <div class="log-best-highlight">
+      <div style="position:relative;z-index:1;width:100%;">
+        <div class="best-hl-tag" style="margin-bottom:14px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          パーソナルベスト
+        </div>
+        <div style="display:flex;align-items:stretch;gap:0;">
+          <div class="best-hl-col">
+            <div>
+              <span class="best-hl-num">${bestDone}</span><span class="best-hl-unit">件</span>
+            </div>
+            <div class="best-hl-lbl">ベスト完了件数</div>
+            <span class="best-hl-badge">BEST RECORD</span>
+          </div>
+          <div class="best-hl-divider"></div>
+          <div class="best-hl-col">
+            <div>
+              <span class="best-hl-num">${bestStreak}</span><span class="best-hl-unit">日</span>
+            </div>
+            <div class="best-hl-lbl">ベスト連続稼働</div>
+            <span class="best-hl-badge">BEST STREAK</span>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="log-best-item">
       <div class="log-best-val">${avgDone}<span>件</span></div>

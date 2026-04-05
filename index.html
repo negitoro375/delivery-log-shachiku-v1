@@ -742,6 +742,193 @@
       body { max-width: 520px; margin: 0 auto; }
       header, .tab-bar { max-width: 520px; left: 50%; transform: translateX(-50%); }
     }
+
+    /* ===== BLIND VALUE ===== */
+    .blind-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      padding: 3px 10px 3px 8px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      transition: background 0.12s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .blind-wrap:active { background: var(--border); }
+    .blind-masked {
+      letter-spacing: 0.2em;
+      color: var(--ink-3);
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .blind-actual { display: none; font-weight: 900; color: var(--ink); }
+    .blind-wrap.revealed .blind-masked { display: none; }
+    .blind-wrap.revealed .blind-actual { display: inline; }
+    .blind-eye-icon { color: var(--ink-3); flex-shrink: 0; }
+    .blind-wrap.revealed .blind-eye-icon { color: var(--blue); }
+
+    /* blind-sm: timeline用の小さいサイズ */
+    .blind-sm { padding: 2px 7px 2px 6px; }
+    .blind-sm .blind-masked { font-size: 12px; letter-spacing: 0.15em; }
+    .blind-sm .blind-actual { font-size: 12px; }
+
+    /* blind-dark: 暗い背景用 */
+    .blind-dark {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .blind-dark .blind-masked { color: rgba(255,255,255,0.5); }
+    .blind-dark .blind-actual { color: white; }
+    .blind-dark .blind-eye-icon { color: rgba(255,255,255,0.45); }
+    .blind-dark.revealed .blind-eye-icon { color: rgba(255,255,255,0.9); }
+
+    /* 単価入力の目隠しオーバーレイ */
+    .unitprice-input-wrap {
+      position: relative;
+      flex: 1;
+    }
+    .unitprice-blind-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      background: #faf5ff;
+      border-radius: 0;
+    }
+    .unitprice-blind-overlay.hidden { display: none; }
+
+    /* ===== 単価 INPUT CARD ===== */
+    .unitprice-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      border: 1.5px solid #e9d5ff;
+      border-radius: 10px;
+      background: #faf5ff;
+      overflow: hidden;
+      transition: border-color 0.18s;
+    }
+    .unitprice-row:focus-within { border-color: #7c3aed; }
+    .unitprice-prefix {
+      font-size: 20px;
+      font-weight: 900;
+      color: #7c3aed;
+      padding: 10px 4px 10px 16px;
+      line-height: 1;
+    }
+    #inp-unitprice {
+      font-size: 28px;
+      font-weight: 900;
+      text-align: center;
+      border: none;
+      padding: 10px 4px;
+      color: #7c3aed;
+      background: transparent;
+      outline: none;
+      font-variant-numeric: tabular-nums;
+      width: 100%;
+    }
+    #inp-unitprice::placeholder { color: #c4b5fd; }
+    .unitprice-suffix {
+      font-size: 13px;
+      font-weight: 800;
+      color: #7c3aed;
+      padding: 10px 16px 10px 4px;
+      line-height: 1.3;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* ===== 今日の合計 CARD ===== */
+    .today-total-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%);
+      border-radius: var(--r);
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .today-total-card.visible { display: block; }
+    .today-total-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .today-total-formula {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .today-total-amount {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      padding: 6px 14px 6px 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.12);
+      border: 1.5px solid rgba(255,255,255,0.2);
+      transition: background 0.12s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .today-total-amount:active { background: rgba(255,255,255,0.2); }
+    .today-total-masked {
+      font-size: 26px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.22em;
+      font-variant-numeric: tabular-nums;
+    }
+    .today-total-real {
+      font-size: 26px;
+      font-weight: 900;
+      color: white;
+      display: none;
+      font-variant-numeric: tabular-nums;
+    }
+    .today-total-amount.revealed .today-total-masked { display: none; }
+    .today-total-amount.revealed .today-total-real { display: inline; }
+    .today-total-eye { color: rgba(255,255,255,0.5); flex-shrink: 0; }
+    .today-total-amount.revealed .today-total-eye { color: rgba(255,255,255,0.9); }
+    .today-total-hint {
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    /* ===== 集計 AMOUNT ===== */
+    .stat-box.s-amount { background: #faf5ff; }
+    .s-amount .stat-lbl { color: #7c3aed; }
+    .amount-stat-row {
+      margin-top: 8px;
+      display: none;
+    }
+    .amount-stat-row.visible { display: block; }
+    .amount-stat-inner {
+      background: #faf5ff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .amount-stat-lbl {
+      font-size: 10px;
+      font-weight: 700;
+      color: #7c3aed;
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
@@ -792,6 +979,16 @@
     <polyline points="21 8 21 21 3 21 3 8"/>
     <rect x="1" y="3" width="22" height="5"/>
     <line x1="10" y1="12" x2="14" y2="12"/>
+  </symbol>
+  <symbol id="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </symbol>
+  <symbol id="ic-yen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2L5 10h14L12 2z"/>
+    <line x1="5" y1="14" x2="19" y2="14"/>
+    <line x1="5" y1="18" x2="19" y2="18"/>
+    <line x1="12" y1="10" x2="12" y2="22"/>
   </symbol>
 </svg>
 
@@ -897,6 +1094,51 @@
     </div>
   </div>
 
+  <!-- 単価設定 -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="card-label">
+      <svg class="icon" width="13" height="13"><use href="#ic-yen"/></svg>
+      単価設定（1件あたり）
+    </div>
+    <div class="unitprice-row">
+      <span class="unitprice-prefix">¥</span>
+      <div class="unitprice-input-wrap">
+        <input type="text" inputmode="numeric" id="inp-unitprice"
+          placeholder="0"
+          oninput="filterNumInput(this); onUnitPriceChange(this.value)"
+          onblur="onUnitPriceBlur()">
+        <div class="unitprice-blind-overlay hidden" id="unitpriceBlind" onclick="focusUnitPrice()">
+          <span style="letter-spacing:0.2em;font-weight:900;font-size:22px;color:#7c3aed;">●●●●</span>
+          <svg width="15" height="15" style="color:#a78bfa;flex-shrink:0;"><use href="#ic-eye"/></svg>
+        </div>
+      </div>
+      <span class="unitprice-suffix">円<br>/件</span>
+    </div>
+    <div style="font-size:11px;color:var(--ink-3);font-weight:600;margin-top:8px;text-align:center;">
+      一度設定すると全記録に自動適用されます
+    </div>
+  </div>
+
+  <!-- 今日の合計金額（単価×完了件数） -->
+  <div class="today-total-card" id="todayTotalCard">
+    <div class="today-total-label">今日の合計金額</div>
+    <div class="today-total-formula" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+      <span>完了 <span id="todayDoneRef">0</span>件 ×</span>
+      <span class="blind-wrap blind-sm blind-dark" id="todayPriceBlind" onclick="toggleBlind(this)">
+        <span class="blind-masked">●●</span>
+        <span class="blind-actual" id="todayPriceActual">¥0</span>
+        <svg class="blind-eye-icon" width="11" height="11"><use href="#ic-eye"/></svg>
+      </span>
+      <span>=</span>
+    </div>
+    <div class="today-total-amount" onclick="this.classList.toggle('revealed')">
+      <span class="today-total-masked">●●●●</span>
+      <span class="today-total-real" id="todayTotalReal">0円</span>
+      <svg class="today-total-eye" width="16" height="16"><use href="#ic-eye"/></svg>
+    </div>
+    <div class="today-total-hint">タップで表示</div>
+  </div>
+
   <button class="save-btn" onclick="saveRecord()">保存する</button>
 
 </section>
@@ -964,6 +1206,17 @@
       <div class="stat-box s-rate">
         <div class="stat-num" id="stRate">—</div>
         <div class="stat-lbl">完了率</div>
+      </div>
+    </div>
+    <!-- 期間合計金額（単価設定時のみ表示） -->
+    <div class="amount-stat-row" id="amountStatRow">
+      <div class="amount-stat-inner">
+        <div class="amount-stat-lbl">期間合計金額</div>
+        <span class="blind-wrap" id="stAmountBlind" onclick="toggleBlind(this)">
+          <span class="blind-masked" style="font-size:16px;">●●●●</span>
+          <span class="blind-actual" id="stAmount" style="font-size:20px;font-weight:900;color:#7c3aed;font-variant-numeric:tabular-nums;">0円</span>
+          <svg class="blind-eye-icon" width="14" height="14"><use href="#ic-eye"/></svg>
+        </span>
       </div>
     </div>
   </div>
@@ -1078,10 +1331,12 @@
 <script>
 // ===== STATE =====
 const STORAGE_KEY = 'deliveryRecords_v2';
+const UNITPRICE_KEY = 'deliveryUnitPrice';
 const WEEKDAYS = ['日','月','火','水','木','金','土'];
 
 let records = [];
 let vals = { takeout: 0, done: 0 };
+let unitPrice = 0;
 let activeFilter = 7;
 let customFrom = null, customTo = null;
 let chart = null;
@@ -1104,8 +1359,74 @@ function init() {
   }
 
   loadRecords();
+  loadUnitPrice();
   renderHistory();
   renderChart();
+}
+
+// ===== UNIT PRICE =====
+function loadUnitPrice() {
+  unitPrice = parseInt(localStorage.getItem(UNITPRICE_KEY)) || 0;
+  if (unitPrice > 0) {
+    document.getElementById('inp-unitprice').value = unitPrice;
+    document.getElementById('unitpriceBlind').classList.remove('hidden');
+  }
+  updateTodayTotal();
+}
+
+function focusUnitPrice() {
+  document.getElementById('unitpriceBlind').classList.add('hidden');
+  document.getElementById('inp-unitprice').focus();
+  document.getElementById('inp-unitprice').select();
+}
+
+function onUnitPriceChange(val) {
+  const n = parseInt(toHalf(val), 10);
+  unitPrice = (!isNaN(n) && n > 0) ? n : 0;
+  updateTodayTotal();
+}
+
+function onUnitPriceBlur() {
+  localStorage.setItem(UNITPRICE_KEY, unitPrice);
+  // 入力値があれば目隠しを表示
+  if (unitPrice > 0) {
+    document.getElementById('unitpriceBlind').classList.remove('hidden');
+  }
+  // 振り返るタブが表示中なら再描画
+  if (document.getElementById('tab-review').classList.contains('active')) {
+    renderLogReview();
+    renderChart();
+  }
+}
+
+// ===== BLIND VALUE =====
+function toggleBlind(el) {
+  el.classList.toggle('revealed');
+}
+
+function createBlind(text, sm) {
+  const cls = sm ? ' blind-sm' : '';
+  const sz = sm ? 12 : 14;
+  return `<span class="blind-wrap${cls}" onclick="toggleBlind(this)">
+    <span class="blind-masked">●●●●</span>
+    <span class="blind-actual">${text}</span>
+    <svg class="blind-eye-icon" width="${sz}" height="${sz}"><use href="#ic-eye"/></svg>
+  </span>`;
+}
+
+// ===== TODAY TOTAL =====
+function updateTodayTotal() {
+  const card = document.getElementById('todayTotalCard');
+  if (unitPrice > 0 && vals.done > 0) {
+    const total = vals.done * unitPrice;
+    document.getElementById('todayDoneRef').textContent = vals.done;
+    document.getElementById('todayPriceActual').textContent = '¥' + unitPrice.toLocaleString();
+    document.getElementById('todayPriceBlind').classList.remove('revealed'); // 更新時はリセット
+    document.getElementById('todayTotalReal').textContent = total.toLocaleString() + '円';
+    card.classList.add('visible');
+  } else {
+    card.classList.remove('visible');
+  }
 }
 
 // ===== DATE NAV =====
@@ -1177,6 +1498,7 @@ function onDateChange() {
     setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
     setHint('done',    'マイクを押して話す　または数字をタップ', '');
   }
+  updateTodayTotal();
 }
 
 // ===== STORAGE =====
@@ -1256,6 +1578,7 @@ function startVoice(field) {
       vals[field] = found;
       document.getElementById('val-' + field).textContent = found;
       setHint(field, `認識結果：${found} 件`, 'ok');
+      updateTodayTotal();
     } else {
       setHint(field, 'うまく聞き取れませんでした。もう一度どうぞ', 'err');
     }
@@ -1338,6 +1661,7 @@ function endEdit(field) {
   inp.style.display = 'none';
   setHint(field, `${vals[field]} 件に設定しました`, 'ok');
   setTimeout(() => setHint(field, 'マイクを押して話す　または数字をタップ', ''), 2000);
+  updateTodayTotal();
 }
 
 // ===== SAVE MESSAGE =====
@@ -1368,14 +1692,13 @@ function saveRecord() {
   }
   saveRecords();
 
-  // reset
+  // reset（日付はそのまま維持）
   vals = { takeout: 0, done: 0 };
   document.getElementById('val-takeout').textContent = '0';
   document.getElementById('val-done').textContent = '0';
-  document.getElementById('recordDate').value = todayStr();
-  updateDateDisplay();
   setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
   setHint('done',    'マイクを押して話す　または数字をタップ', '');
+  updateTodayTotal();
 }
 
 // ===== FILTER =====
@@ -1603,6 +1926,11 @@ function renderLogReview() {
     const lbl = `${d.getMonth()+1}/${d.getDate()}（${WEEKDAYS[d.getDay()]}）`;
     const msg = saveMsg(r.done).replace('保存しました！', '').trim();
     const rate = r.takeout > 0 ? Math.round(r.done/r.takeout*100) + '%' : '—';
+    const amountHtml = (unitPrice > 0 && r.done > 0) ? `
+      <div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;">
+        <span class="log-count-lbl">合計</span>
+        ${createBlind((r.done * unitPrice).toLocaleString() + '円', true)}
+      </div>` : '';
     return `
       <div class="log-entry">
         <div class="log-line-col">
@@ -1630,6 +1958,7 @@ function renderLogReview() {
               <span class="log-count-num" style="font-size:15px;color:var(--amber)">${rate}</span>
             </div>
           </div>
+          ${amountHtml}
           ${msg ? `<div class="log-msg">${msg}</div>` : ''}
         </div>
       </div>`;
@@ -1643,6 +1972,18 @@ function updateStats(filtered) {
   document.getElementById('stTakeout').textContent = t;
   document.getElementById('stDone').textContent    = d;
   document.getElementById('stRate').textContent    = rate;
+
+  // 期間合計金額（単価設定時のみ表示）
+  const amountRow = document.getElementById('amountStatRow');
+  if (unitPrice > 0 && d > 0) {
+    const total = d * unitPrice;
+    document.getElementById('stAmount').textContent = total.toLocaleString() + '円';
+    // 再表示時にブラインドをリセット
+    document.getElementById('stAmountBlind').classList.remove('revealed');
+    amountRow.classList.add('visible');
+  } else {
+    amountRow.classList.remove('visible');
+  }
 }
 
 // ===== HISTORY =====

@@ -738,6 +738,13 @@
     .toast.ok   { background: var(--green); }
     .toast.ng   { background: var(--danger); }
 
+    /* ===== CSV DROP ZONE ===== */
+    #csvDropZone.drag-over {
+      border-color: var(--blue);
+      background: var(--blue-light);
+    }
+    #csvDropZone.drag-over svg { opacity: 1; stroke: var(--blue); }
+
     @media (min-width: 520px) {
       body { max-width: 520px; margin: 0 auto; }
       header, .tab-bar { max-width: 520px; left: 50%; transform: translateX(-50%); }
@@ -1230,6 +1237,44 @@
 
   <!-- メインビュー -->
   <div id="csvMain">
+
+    <!-- インポート -->
+    <div class="card">
+      <div class="card-label">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSVインポート
+      </div>
+
+      <!-- ドロップゾーン -->
+      <div id="csvDropZone"
+        onclick="document.getElementById('csvFileInput').click()"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="onCsvDrop(event)"
+        style="
+          border: 2px dashed var(--border);
+          border-radius: 12px;
+          padding: 28px 16px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.18s;
+          background: var(--surface);
+        ">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px;opacity:0.5;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div style="font-size:14px;font-weight:700;color:var(--ink-2);margin-bottom:4px;">CSVファイルを選択</div>
+        <div style="font-size:11px;color:var(--ink-3);font-weight:500;">タップして選択　または　ドラッグ＆ドロップ</div>
+        <div style="font-size:10px;color:var(--ink-3);margin-top:6px;">このアプリでエクスポートしたCSVのみ対応</div>
+      </div>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="onCsvFileSelect(this)">
+
+      <!-- インポート結果表示 -->
+      <div id="csvImportResult" style="display:none;margin-top:12px;"></div>
+    </div>
+
     <div class="card">
       <div class="card-label">CSVダウンロード</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1262,6 +1307,19 @@
   </div>
 
 </section>
+
+<!-- ===== CSV IMPORT CONFIRM MODAL ===== -->
+<div class="modal-overlay" id="csvImportModal">
+  <div class="modal">
+    <div class="modal-title">CSVを取り込みます</div>
+    <div id="csvImportSummary" style="background:var(--surface);border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--ink-2);font-weight:600;line-height:1.8;"></div>
+    <p style="text-align:center;font-size:12px;color:var(--ink-3);margin-bottom:4px;">既存の同じ日付のデータは上書きされます。</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal('csvImportModal'); clearCsvInput()">キャンセル</button>
+      <button class="modal-ok" onclick="executeCsvImport()">取り込む</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== EDIT MODAL ===== -->
 <div class="modal-overlay" id="editModal">
@@ -2143,6 +2201,132 @@ function exportByPeriod(key) {
   a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
   toast('ダウンロードしました', 'ok');
+}
+
+// ===== CSV IMPORT =====
+let csvImportPending = []; // パース済みの取り込み予定データ
+
+function onCsvDrop(e) {
+  e.preventDefault();
+  document.getElementById('csvDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processCsvFile(file);
+}
+
+function onCsvFileSelect(input) {
+  const file = input.files[0];
+  if (file) processCsvFile(file);
+}
+
+function clearCsvInput() {
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvImportResult').style.display = 'none';
+  csvImportPending = [];
+}
+
+function processCsvFile(file) {
+  // .csv以外を弾く
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showImportResult('error', 'CSVファイル（.csv）を選択してください');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => showImportResult('error', 'ファイルの読み込みに失敗しました');
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const parsed = parseCsv(text);
+      if (parsed.length === 0) {
+        showImportResult('error', '有効なデータが見つかりませんでした');
+        return;
+      }
+      csvImportPending = parsed;
+      // 確認モーダルを表示
+      const overlapCount = parsed.filter(r => records.find(ex => ex.date === r.date)).length;
+      const newCount = parsed.length - overlapCount;
+      document.getElementById('csvImportSummary').innerHTML =
+        `📄 ファイル名：${file.name}<br>` +
+        `✅ 取り込み件数：<b>${parsed.length}日分</b><br>` +
+        (newCount     ? `🆕 新規追加：${newCount}件<br>` : '') +
+        (overlapCount ? `🔄 上書き更新：${overlapCount}件<br>` : '');
+      document.getElementById('csvImportModal').classList.add('open');
+    } catch (err) {
+      showImportResult('error', 'CSVの解析に失敗しました。このアプリでエクスポートしたCSVを使用してください');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCsv(text) {
+  // BOM除去
+  const clean = text.replace(/^\uFEFF/, '').trim();
+  const lines = clean.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) throw new Error('行数不足');
+
+  const header = lines[0].split(',').map(h => h.trim());
+  // 日付・持ち出し件数・完了件数 の列を特定
+  const dateIdx    = header.findIndex(h => h === '日付');
+  const takeoutIdx = header.findIndex(h => h === '持ち出し件数');
+  const doneIdx    = header.findIndex(h => h === '完了件数');
+
+  if (dateIdx < 0 || takeoutIdx < 0 || doneIdx < 0) {
+    throw new Error('必要な列が見つかりません');
+  }
+
+  const result = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',');
+    const date    = cols[dateIdx]?.trim();
+    const takeout = parseInt(cols[takeoutIdx]?.trim(), 10);
+    const done    = parseInt(cols[doneIdx]?.trim(), 10);
+
+    // バリデーション
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    if (isNaN(takeout) || isNaN(done) || takeout < 0 || done < 0) continue;
+
+    result.push({ date, takeout, done });
+  }
+  return result;
+}
+
+function executeCsvImport() {
+  if (!csvImportPending.length) return;
+  let added = 0, updated = 0;
+  csvImportPending.forEach(r => {
+    const idx = records.findIndex(ex => ex.date === r.date);
+    if (idx >= 0) {
+      records[idx] = { ...records[idx], takeout: r.takeout, done: r.done, updatedAt: Date.now() };
+      updated++;
+    } else {
+      records.push({ id: Date.now() + Math.random(), date: r.date, takeout: r.takeout, done: r.done, createdAt: Date.now() });
+      added++;
+    }
+  });
+  saveRecords();
+  closeModal('csvImportModal');
+  clearCsvInput();
+  renderChart();
+  renderLogReview();
+  const msg = `取り込み完了！新規${added}件・更新${updated}件`;
+  showImportResult('ok', msg);
+  toast(msg, 'ok');
+}
+
+function showImportResult(type, msg) {
+  const el = document.getElementById('csvImportResult');
+  const isOk = type === 'ok';
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="
+      display:flex;align-items:flex-start;gap:10px;
+      padding:12px 14px;border-radius:10px;
+      background:${isOk ? 'var(--green-light)' : 'var(--amber-light)'};
+      border:1px solid ${isOk ? '#d1fae5' : '#fde68a'};
+    ">
+      <span style="font-size:16px;flex-shrink:0;">${isOk ? '✅' : '⚠️'}</span>
+      <span style="font-size:13px;font-weight:600;color:${isOk ? 'var(--green)' : '#78350f'};line-height:1.5;">${msg}</span>
+    </div>`;
 }
 
 // ===== MODAL =====

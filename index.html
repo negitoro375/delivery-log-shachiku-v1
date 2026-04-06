@@ -1747,6 +1747,22 @@ function onDateChange() {
     setHint('done',    'マイクを押して話す　または数字をタップ', '');
   }
   updateTodayTotal();
+  // メモを日付に合わせて復元
+  const memoText   = document.getElementById('memoText');
+  const memoBody   = document.getElementById('memoBody');
+  const memoToggle = document.getElementById('memoToggle');
+  const memoIcon   = document.getElementById('memoToggleIcon');
+  const savedMemo  = existing && existing.memo ? existing.memo : '';
+  memoText.value = savedMemo;
+  if (savedMemo) {
+    memoBody.classList.add('open');
+    memoToggle.classList.add('open');
+    memoIcon.textContent = '－';
+  } else {
+    memoBody.classList.remove('open');
+    memoToggle.classList.remove('open');
+    memoIcon.textContent = '＋';
+  }
 }
 
 // ===== STORAGE =====
@@ -1949,13 +1965,7 @@ function saveRecord() {
   setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
   setHint('done',    'マイクを押して話す　または数字をタップ', '');
   updateTodayTotal();
-  // reflection reset
-  document.getElementById('memoText').value = '';
-  const memoBody = document.getElementById('memoBody');
-  const memoToggle = document.getElementById('memoToggle');
-  memoBody.classList.remove('open');
-  memoToggle.classList.remove('open');
-  document.getElementById('memoToggleIcon').textContent = '＋';
+  // メモは保存後もそのまま維持（クリアしない）
 }
 
 // ===== FILTER =====

@@ -360,6 +360,69 @@
     }
     .save-btn:active { opacity: 0.85; transform: scale(0.98); }
 
+    /* ===== REFLECTION CARD ===== */
+    .reflection-card {
+      background: var(--white);
+      border-radius: var(--r);
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      padding: 18px 16px 16px;
+      margin-top: 12px;
+    }
+    .accordion-toggle {
+      width: 100%;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin-top: 4px;
+      padding: 10px 0 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-3);
+      cursor: pointer;
+      text-align: left;
+    }
+    .accordion-toggle-icon {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--ink-3);
+      transition: transform 0.25s;
+      line-height: 1;
+    }
+    .accordion-toggle.open .accordion-toggle-icon { transform: rotate(45deg); }
+    .accordion-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease, opacity 0.25s ease;
+      opacity: 0;
+    }
+    .accordion-body.open {
+      max-height: 160px;
+      opacity: 1;
+    }
+    .memo-textarea {
+      width: 100%;
+      min-height: 88px;
+      margin-top: 10px;
+      padding: 11px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--ink);
+      resize: none;
+      outline: none;
+      line-height: 1.55;
+      transition: border-color 0.15s;
+    }
+    .memo-textarea:focus { border-color: #a78bfa; }
+    .memo-textarea::placeholder { color: var(--ink-3); font-size: 13px; }
+
     /* ===== SPEECH WARNING ===== */
     .speech-warn {
       background: var(--amber-light);
@@ -1090,6 +1153,13 @@
     <line x1="5" y1="18" x2="19" y2="18"/>
     <line x1="12" y1="10" x2="12" y2="22"/>
   </symbol>
+  <symbol id="ic-memo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <line x1="10" y1="9" x2="8" y2="9"/>
+  </symbol>
 </svg>
 
 <header>
@@ -1240,6 +1310,19 @@
   </div>
 
   <button class="save-btn" onclick="saveRecord()">保存する</button>
+
+  <!-- 振り返り・メモ -->
+  <div class="reflection-card" id="reflectionCard">
+    <button class="accordion-toggle" id="memoToggle" onclick="toggleMemo()">
+      <span class="accordion-toggle-icon" id="memoToggleIcon">＋</span>
+      <svg width="14" height="14" style="flex-shrink:0;opacity:0.6;"><use href="#ic-memo"/></svg>
+      今日のメモを書く（任意）
+    </button>
+    <div class="accordion-body" id="memoBody">
+      <textarea class="memo-textarea" id="memoText"
+        placeholder="例：午後から渋滞が多かった、〇〇エリアは効率よかったなど"></textarea>
+    </div>
+  </div>
 
 </section>
 
@@ -1551,6 +1634,20 @@ function onUnitPriceBlur() {
 }
 
 // ===== BLIND VALUE =====
+// ===== REFLECTION =====
+function toggleMemo() {
+  const body   = document.getElementById('memoBody');
+  const toggle = document.getElementById('memoToggle');
+  const icon   = document.getElementById('memoToggleIcon');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+  icon.textContent = isOpen ? '＋' : '－';
+  if (!isOpen) {
+    setTimeout(() => document.getElementById('memoText').focus(), 50);
+  }
+}
+
 function toggleBlind(el) {
   el.classList.toggle('revealed');
 }
@@ -1833,12 +1930,14 @@ function saveRecord() {
   if (!date) { toast('日付を選択してください', 'ng'); return; }
   if (vals.takeout === 0 && vals.done === 0) { toast('件数を入力してください', 'ng'); return; }
 
+  const memo = document.getElementById('memoText').value.trim();
+
   const idx = records.findIndex(r => r.date === date);
   if (idx >= 0) {
-    records[idx] = { ...records[idx], takeout: vals.takeout, done: vals.done, updatedAt: Date.now() };
+    records[idx] = { ...records[idx], takeout: vals.takeout, done: vals.done, memo, updatedAt: Date.now() };
     toast('更新しました', 'ok');
   } else {
-    records.push({ id: Date.now(), date, takeout: vals.takeout, done: vals.done, createdAt: Date.now() });
+    records.push({ id: Date.now(), date, takeout: vals.takeout, done: vals.done, memo, createdAt: Date.now() });
     toast(saveMsg(vals.done), 'ok');
   }
   saveRecords();
@@ -1850,6 +1949,13 @@ function saveRecord() {
   setHint('takeout', 'マイクを押して話す　または数字をタップ', '');
   setHint('done',    'マイクを押して話す　または数字をタップ', '');
   updateTodayTotal();
+  // reflection reset
+  document.getElementById('memoText').value = '';
+  const memoBody = document.getElementById('memoBody');
+  const memoToggle = document.getElementById('memoToggle');
+  memoBody.classList.remove('open');
+  memoToggle.classList.remove('open');
+  document.getElementById('memoToggleIcon').textContent = '＋';
 }
 
 // ===== FILTER =====

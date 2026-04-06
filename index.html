@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>配達記録</title>
+  <link rel="icon" href="assets/app-logo.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/app-logo.png">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,8 +52,14 @@
     }
     .header-inner {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 10px;
+    }
+    .app-logo-icon {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      flex-shrink: 0;
     }
     header h1 {
       font-size: 17px;

@@ -1099,6 +1099,8 @@
   Googleでログインする
 </button>
 
+<div id="app" style="display:none">
+
 <!-- ===== INLINE SVG SYMBOL DEFS ===== -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <symbol id="ic-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2593,10 +2595,11 @@ function toast(msg, type) {
 
 init();
 </script>
+</div><!-- /#app -->
+
 <script type="module">
-  // 1. 認証に必要な機能を「auth」から追加で読み込みます
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAf4BfQ30q7nhmq-JibqYL0l88sX3tSp-k",
@@ -2607,22 +2610,29 @@ init();
     appId: "1:249830776606:web:aceef4d92eeb5332bc330f"
   };
 
-  // 2. Firebaseを初期化して「認証機能」を準備
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // 3. 1098行目に置いた「loginBtn」という名前のボタンを押した時の命令
-  document.getElementById('loginBtn').addEventListener('click', () => {
-    // ポップアップでGoogleログイン画面を呼び出す
+  const loginBtn = document.getElementById('loginBtn');
+  const appEl = document.getElementById('app');
+
+  // ログイン状態を監視して表示を切り替える
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // ログイン済み：アプリを表示、ログインボタンを隠す
+      loginBtn.style.display = 'none';
+      appEl.style.display = 'block';
+    } else {
+      // 未ログイン：ログインボタンを表示、アプリを隠す
+      loginBtn.style.display = 'block';
+      appEl.style.display = 'none';
+    }
+  });
+
+  loginBtn.addEventListener('click', () => {
     signInWithPopup(auth, provider)
-      .then((result) => {
-        // 成功したとき：お祝いのメッセージ
-        alert(result.user.displayName + "さん、こんにちは！ログイン成功です！");
-        console.log("ユーザー情報:", result.user);
-      })
       .catch((error) => {
-        // 失敗したとき：エラーメッセージを出す
         alert("ログインに失敗しました: " + error.message);
         console.error(error);
       });

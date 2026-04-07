@@ -2624,9 +2624,16 @@ init();
   const logoutBtn = document.getElementById('logoutBtn');
   const appEl = document.getElementById('app');
 
+  const ALLOWED_EMAILS = ['maruyama.maruyama2024@gmail.com'];
+
   // ログイン状態を監視して表示を切り替える
   onAuthStateChanged(auth, (user) => {
     if (user) {
+      if (!ALLOWED_EMAILS.includes(user.email)) {
+        auth.signOut();
+        alert('このアカウントはアクセスできません: ' + user.email);
+        return;
+      }
       loginBtn.style.display = 'none';
       userInfo.style.display = 'flex';
       userName.textContent = user.displayName + 'さん';

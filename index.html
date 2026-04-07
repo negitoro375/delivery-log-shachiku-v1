@@ -1095,12 +1095,63 @@
   </style>
 </head>
 <body>
-  <button id="loginBtn" style="margin: 20px; padding: 12px 24px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 16px;">
-  Googleでログインする
-</button>
-<div id="userInfo" style="display:none; margin: 20px; display: none; align-items: center; gap: 12px;">
-  <span id="userName" style="font-weight: bold; font-size: 16px;"></span>
-  <button id="logoutBtn" style="padding: 8px 16px; background: #e53e3e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;">ログアウト</button>
+<!-- ログイン画面 -->
+<div id="loginScreen" style="
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #eff6ff 0%, #f0fdf4 100%);
+  padding: 32px 24px;
+  gap: 0;
+">
+  <img src="assets/app-logo.png" alt="配達記録" style="width: 80px; height: 80px; border-radius: 20px; box-shadow: 0 4px 16px rgba(37,99,235,0.15); margin-bottom: 20px;">
+  <h1 style="font-size: 26px; font-weight: 800; color: #1e3a5f; letter-spacing: -0.5px; margin-bottom: 6px;">配達記録</h1>
+  <p style="font-size: 14px; color: #64748b; margin-bottom: 40px; text-align: center; line-height: 1.6;">日々の配達実績を<br>かんたんに記録・管理</p>
+
+  <button id="loginBtn" style="
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    background: white;
+    color: #1e3a5f;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: box-shadow 0.15s, transform 0.1s;
+    width: 100%;
+    max-width: 300px;
+    justify-content: center;
+  "
+  onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.13)'; this.style.transform='translateY(-1px)'"
+  onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; this.style.transform=''"
+  onmousedown="this.style.transform='scale(0.98)'"
+  onmouseup="this.style.transform=''"
+  >
+    <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+    Googleでログインする
+  </button>
+
+  <p style="margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; line-height: 1.7;">
+    許可されたアカウントのみ<br>アクセスできます
+  </p>
+</div>
+
+<!-- ログイン済みヘッダー -->
+<div id="userInfo" style="display: none; align-items: center; gap: 10px; padding: 10px 16px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100;">
+  <span id="userName" style="font-weight: 600; font-size: 14px; color: #1e3a5f; flex: 1;"></span>
+  <button id="logoutBtn" style="padding: 6px 14px; background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;">ログアウト</button>
 </div>
 
 <div id="app" style="display:none">
@@ -2618,7 +2669,7 @@ init();
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  const loginBtn = document.getElementById('loginBtn');
+  const loginScreen = document.getElementById('loginScreen');
   const userInfo = document.getElementById('userInfo');
   const userName = document.getElementById('userName');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -2634,17 +2685,18 @@ init();
         alert('このアカウントはアクセスできません: ' + user.email);
         return;
       }
-      loginBtn.style.display = 'none';
+      loginScreen.style.display = 'none';
       userInfo.style.display = 'flex';
       userName.textContent = user.displayName + 'さん';
       appEl.style.display = 'block';
     } else {
-      loginBtn.style.display = 'block';
+      loginScreen.style.display = 'flex';
       userInfo.style.display = 'none';
       appEl.style.display = 'none';
     }
   });
 
+  const loginBtn = document.getElementById('loginBtn');
   loginBtn.addEventListener('click', () => {
     signInWithPopup(auth, provider)
       .catch((error) => {

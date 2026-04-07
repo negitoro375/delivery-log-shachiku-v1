@@ -1098,6 +1098,10 @@
   <button id="loginBtn" style="margin: 20px; padding: 12px 24px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 16px;">
   Googleでログインする
 </button>
+<div id="userInfo" style="display:none; margin: 20px; display: none; align-items: center; gap: 12px;">
+  <span id="userName" style="font-weight: bold; font-size: 16px;"></span>
+  <button id="logoutBtn" style="padding: 8px 16px; background: #e53e3e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;">ログアウト</button>
+</div>
 
 <div id="app" style="display:none">
 
@@ -2615,17 +2619,21 @@ init();
   const provider = new GoogleAuthProvider();
 
   const loginBtn = document.getElementById('loginBtn');
+  const userInfo = document.getElementById('userInfo');
+  const userName = document.getElementById('userName');
+  const logoutBtn = document.getElementById('logoutBtn');
   const appEl = document.getElementById('app');
 
   // ログイン状態を監視して表示を切り替える
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // ログイン済み：アプリを表示、ログインボタンを隠す
       loginBtn.style.display = 'none';
+      userInfo.style.display = 'flex';
+      userName.textContent = user.displayName + 'さん';
       appEl.style.display = 'block';
     } else {
-      // 未ログイン：ログインボタンを表示、アプリを隠す
       loginBtn.style.display = 'block';
+      userInfo.style.display = 'none';
       appEl.style.display = 'none';
     }
   });
@@ -2636,6 +2644,10 @@ init();
         alert("ログインに失敗しました: " + error.message);
         console.error(error);
       });
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    auth.signOut();
   });
 </script>
 </body>

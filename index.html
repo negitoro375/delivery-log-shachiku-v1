@@ -1095,6 +1095,9 @@
   </style>
 </head>
 <body>
+  <button id="loginBtn" style="margin: 20px; padding: 12px 24px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); font-size: 16px;">
+  Googleでログインする
+</button>
 
 <!-- ===== INLINE SVG SYMBOL DEFS ===== -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
@@ -2591,12 +2594,10 @@ function toast(msg, type) {
 init();
 </script>
 <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+  // 1. 認証に必要な機能を「auth」から追加で読み込みます
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-  // Your web app's Firebase configuration
   const firebaseConfig = {
     apiKey: "AIzaSyAf4BfQ30q7nhmq-JibqYL0l88sX3tSp-k",
     authDomain: "studio-7915217481-544d9.firebaseapp.com",
@@ -2606,8 +2607,26 @@ init();
     appId: "1:249830776606:web:aceef4d92eeb5332bc330f"
   };
 
-  // Initialize Firebase
+  // 2. Firebaseを初期化して「認証機能」を準備
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  // 3. 1098行目に置いた「loginBtn」という名前のボタンを押した時の命令
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    // ポップアップでGoogleログイン画面を呼び出す
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        // 成功したとき：お祝いのメッセージ
+        alert(result.user.displayName + "さん、こんにちは！ログイン成功です！");
+        console.log("ユーザー情報:", result.user);
+      })
+      .catch((error) => {
+        // 失敗したとき：エラーメッセージを出す
+        alert("ログインに失敗しました: " + error.message);
+        console.error(error);
+      });
+  });
 </script>
 </body>
 </html>

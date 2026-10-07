@@ -2754,17 +2754,26 @@ init();
   const logoutBtn = document.getElementById('logoutBtn');
   const appEl = document.getElementById('app');
 
-  const ALLOWED_EMAILS = [
-    'maruyama.maruyama2024@gmail.com',
-    'g.virtue.nadleeh@gmail.com',
-    'manato0620@gmail.com',
-    'kouta7474kouta@gmail.com', // 新宮
+  // 許可するGoogleアカウント（メールアドレスそのものは書かず、SHA-256に変換した値だけを置く）
+  // 変換のしかた：アドレスを小文字にして前後の空白を取り、SHA-256（16進数）にする
+  // 追加・削除の手順は README.md の「利用者の追加・削除」を参照
+  const ALLOWED_HASHES = [
+    '4230c88c811d4ec83517cc4dd3e2a1092ee10440fb2940c3580c2c64f9dd2511', // 利用者1
+    '33ba62b1ae3a7a0f5bc3115a75deac8e82d283adaecd8fe3f9888622a3ccadeb', // 利用者2
+    '542304b7ac175acc7a920c8c00aea7db03632e6d723472d6e03b17229b1d4b2f', // 利用者3
+    'ebf8036c8f6b0066dd168907744afb84372c34d386b3670a90d1346963eb5eef', // 利用者4
   ];
 
+  async function emailHash(email) {
+    const data = new TextEncoder().encode(String(email || '').trim().toLowerCase());
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   // ログイン状態を監視して表示を切り替える
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
-      if (!ALLOWED_EMAILS.includes(user.email)) {
+      if (!ALLOWED_HASHES.includes(await emailHash(user.email))) {
         auth.signOut();
         alert('このアカウントはアクセスできません: ' + user.email);
         return;
